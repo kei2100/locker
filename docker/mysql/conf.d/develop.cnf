@@ -1,0 +1,21 @@
+[mysqld]
+skip-host-cache
+skip-name-resolve
+
+character-set-server = utf8mb4
+collation-server     = utf8mb4_bin
+
+# クエリログを出力したい場合
+#general_log = 1
+#general-log-file = /var/lib/mysql/general.log
+
+[mysql]
+default-character-set = utf8mb4
+
+[client]
+loose-default-character-set = utf8mb4
+
+[mysqldump]
+quick
+quote-names
+max_allowed_packet = 16M

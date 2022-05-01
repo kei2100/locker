@@ -1,0 +1,15 @@
+version: '3.9'
+services:
+  mysql:
+    profiles:
+      - middleware
+    image: mysql:8-debian
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_USER: develop
+      MYSQL_PASSWORD: develop
+      MYSQL_DATABASE: develop
+    volumes:
+      - ./docker/mysql/conf.d:/etc/mysql/conf.d
+    ports:
+      - ${HOST_MYSQL_PORT:-3306}:3306
