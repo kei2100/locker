@@ -5,9 +5,24 @@ init: tools test
 tools:
 	go install github.com/ArcanjoQueiroz/wait-for@v0.0.3
 
+## for development ##
+PACKAGES = $(shell go list ./...)
+
+.PHONY: fmt
+fmt:
+	go fmt $(PACKAGES)
+
+.PHONY: vet
+vet:
+	go vet $(PACKAGES)
+
 .PHONY: test
 test: middleware.up
-	echo "TODO"
+	go test -race $(PACKAGES)
+
+.PHONY: test.nocache
+test.nocache: middleware.up
+	go test -count=1 -race $(PACKAGES)
 
 ## mysql ##
 mysql.console: middleware.up
