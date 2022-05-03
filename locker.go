@@ -1,6 +1,8 @@
 package locker
 
-import "context"
+import (
+	"context"
+)
 
 // TODO
 type Locker interface {
