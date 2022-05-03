@@ -10,20 +10,23 @@ import (
 )
 
 type Locker struct {
-	db *sql.DB
+	Logger locker.Logger
+	db     *sql.DB
 }
 
 // NewLocker creates a new Locker
 func NewLocker(db *sql.DB) *Locker {
 	return &Locker{
-		db: db,
+		Logger: locker.DefaultLogger,
+		db:     db,
 	}
 }
 
 type lock struct {
-	conn *sql.Conn
-	key  string
-	once sync.UntilSucceedOnce
+	logger locker.Logger
+	conn   *sql.Conn
+	key    string
+	once   sync.UntilSucceedOnce
 }
 
 func (r *Locker) Get(ctx context.Context, key string) (locker.Lock, error) {
@@ -33,7 +36,7 @@ func (r *Locker) Get(ctx context.Context, key string) (locker.Lock, error) {
 	}
 	onerror := func() {
 		if err := conn.Close(); err != nil {
-			// TODO log
+			r.Logger.Printf("mysql: an error occurred while closing the connection: %+v\n", err)
 		}
 	}
 	var result sql.NullInt32
@@ -47,8 +50,9 @@ func (r *Locker) Get(ctx context.Context, key string) (locker.Lock, error) {
 		return nil, fmt.Errorf("mysql: get_lock(?, -1) returns unexpected result (%v %v)", result.Int32, result.Valid)
 	}
 	return &lock{
-		conn: conn,
-		key:  key,
+		conn:   conn,
+		key:    key,
+		logger: locker.DefaultLogger,
 	}, nil
 }
 
@@ -60,10 +64,10 @@ func (k *lock) Release(ctx context.Context) error {
 			return fmt.Errorf("mysql: release lock: %w", err)
 		}
 		if !result.Valid {
-			// TODO log
+			k.logger.Println("mysql: lock already released")
 		}
 		if err := k.conn.Close(); err != nil {
-			// TODO log
+			k.logger.Printf("mysql: an error occurred while closing the connection: %+v\n", err)
 		}
 		return nil
 	}); err != nil {
