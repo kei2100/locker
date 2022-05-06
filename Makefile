@@ -28,13 +28,19 @@ test.nocache: middleware.up
 mysql.console: middleware.up
 	docker compose exec mysql mysql -uroot
 
+## postgres ##
+postgres.console: middleware.up
+	docker compose exec postgres psql --username=develop
+
 ## middleware ##
 HOST_MYSQL_PORT ?= 3306
+HOST_POSTGRES_PORT ?= 5432
 
 .PHONY: middleware.up
 middleware.up:
 	docker compose --profile=middleware up -d
 	wait-for --type=mysql --name=develop --port=$(HOST_MYSQL_PORT) --user=develop --password=develop --seconds=3 --maxAttempts=10
+	wait-for --type=postgres --name=develop --port=$(HOST_POSTGRES_PORT) --user=develop --password=develop --seconds=3 --maxAttempts=10
 
 .PHONY: middleware.kill
 middleware.kill:
