@@ -6,3 +6,8 @@ require (
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/kei2100/sync-until-succeed-once v0.0.1
 )
+
+require (
+	github.com/lib/pq v1.10.5 // indirect
+	github.com/twmb/murmur3 v1.1.6 // indirect
+)
