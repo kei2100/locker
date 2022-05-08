@@ -33,24 +33,20 @@ func NewLocker(db *sql.DB) *Locker {
 type lock struct {
 	logger locker.Logger
 	conn   *sql.Conn
-	key1   int32
-	key2   int32
+	keyA   int32
+	keyB   int32
 	once   sync.UntilSucceedOnce
 }
 
 func (r *Locker) Get(ctx context.Context, key string) (locker.Lock, error) {
-	h1 := r.Hash32A()
-	if _, err := io.WriteString(h1, key); err != nil {
-		return nil, fmt.Errorf("postgres: write string to Hash32A hash function: %w", err)
+	keyA, keyB, err := r.sum32Keys(key)
+	if err != nil {
+		return nil, err
 	}
-	h2 := r.Hash32B()
-	if _, err := io.WriteString(h2, key); err != nil {
-		return nil, fmt.Errorf("postgres: write string to Hash32B hash function: %w", err)
-	}
-	return r.Get32(ctx, int32(h1.Sum32()), int32(h2.Sum32()))
+	return r.Get32(ctx, keyA, keyB)
 }
 
-func (r *Locker) Get32(ctx context.Context, key1, key2 int32) (locker.Lock, error) {
+func (r *Locker) Get32(ctx context.Context, keyA, keyB int32) (locker.Lock, error) {
 	conn, err := r.db.Conn(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("postgres: get connection: %w", err)
@@ -60,21 +56,33 @@ func (r *Locker) Get32(ctx context.Context, key1, key2 int32) (locker.Lock, erro
 			r.Logger.Printf("postgres: an error occurred while closing the connection: %+v\n", err)
 		}
 	}
-	if _, err := conn.ExecContext(ctx, "SELECT pg_advisory_lock($1, $2)", key1, key2); err != nil {
+	if _, err := conn.ExecContext(ctx, "SELECT pg_advisory_lock($1, $2)", keyA, keyB); err != nil {
 		defer onerror()
 		return nil, fmt.Errorf("postgres: SELECT pg_advisory_lock: %w", err)
 	}
 	return &lock{
 		conn:   conn,
-		key1:   key1,
-		key2:   key2,
+		keyA:   keyA,
+		keyB:   keyB,
 		logger: locker.DefaultLogger,
 	}, nil
 }
 
+func (r *Locker) sum32Keys(key string) (keyA, keyB int32, err error) {
+	hA := r.Hash32A()
+	if _, err := io.WriteString(hA, key); err != nil {
+		return 0, 0, fmt.Errorf("postgres: write string to Hash32A hash function: %w", err)
+	}
+	hB := r.Hash32B()
+	if _, err := io.WriteString(hB, key); err != nil {
+		return 0, 0, fmt.Errorf("postgres: write string to Hash32B hash function: %w", err)
+	}
+	return int32(hA.Sum32()), int32(hB.Sum32()), nil
+}
+
 func (k *lock) Release(ctx context.Context) error {
 	if err := k.once.Do(func() error {
-		row := k.conn.QueryRowContext(ctx, "SELECT pg_advisory_unlock($1, $2)", k.key1, k.key2)
+		row := k.conn.QueryRowContext(ctx, "SELECT pg_advisory_unlock($1, $2)", k.keyA, k.keyB)
 		var released bool
 		if err := row.Scan(&released); err != nil {
 			return fmt.Errorf("postgres: release lock: %w", err)
