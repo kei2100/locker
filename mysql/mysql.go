@@ -63,7 +63,7 @@ func (k *lock) Release(ctx context.Context) error {
 		if err := row.Scan(&result); err != nil {
 			return fmt.Errorf("mysql: release lock: %w", err)
 		}
-		if !result.Valid {
+		if !result.Valid || result.Int32 == 0 {
 			k.logger.Println("mysql: lock already released")
 		}
 		if err := k.conn.Close(); err != nil {
