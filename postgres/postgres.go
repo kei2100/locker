@@ -7,9 +7,9 @@ import (
 	"hash"
 	"hash/fnv"
 	"io"
+	"sync"
 
 	"github.com/kei2100/locker"
-	"github.com/kei2100/sync-until-succeed-once"
 	"github.com/twmb/murmur3"
 )
 
@@ -35,7 +35,7 @@ type lock struct {
 	conn   *sql.Conn
 	keyA   int32
 	keyB   int32
-	once   sync.UntilSucceedOnce
+	once   sync.Once
 }
 
 func (r *Locker) Get(ctx context.Context, key string) (locker.Lock, error) {
@@ -53,7 +53,7 @@ func (r *Locker) Get32(ctx context.Context, keyA, keyB int32) (locker.Lock, erro
 	}
 	onerror := func() {
 		if err := conn.Close(); err != nil {
-			r.Logger.Printf("postgres: an error occurred while closing the connection: %+v\n", err)
+			r.Logger.Printf("postgres: an error occurred while closing the connection: %+v", err)
 		}
 	}
 	if _, err := conn.ExecContext(ctx, "SELECT pg_advisory_lock($1, $2)", keyA, keyB); err != nil {
@@ -80,22 +80,21 @@ func (r *Locker) sum32Keys(key string) (keyA, keyB int32, err error) {
 	return int32(hA.Sum32()), int32(hB.Sum32()), nil
 }
 
-func (k *lock) Release(ctx context.Context) error {
-	if err := k.once.Do(func() error {
+func (k *lock) Release(ctx context.Context) {
+	k.once.Do(func() {
+		defer func() {
+			if err := k.conn.Close(); err != nil {
+				k.logger.Printf("postgres: an error occurred while closing the connection: %+v", err)
+			}
+		}()
 		row := k.conn.QueryRowContext(ctx, "SELECT pg_advisory_unlock($1, $2)", k.keyA, k.keyB)
 		var released bool
 		if err := row.Scan(&released); err != nil {
-			return fmt.Errorf("postgres: release lock: %w", err)
+			k.logger.Printf("postgres: failed to release lock: %+v", err)
+			return
 		}
 		if !released {
-			k.logger.Println("postgres: lock already released")
+			panic("postgres: lock already released")
 		}
-		if err := k.conn.Close(); err != nil {
-			k.logger.Printf("postgres: an error occurred while closing the connection: %+v\n", err)
-		}
-		return nil
-	}); err != nil {
-		return err
-	}
-	return nil
+	})
 }

@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sync"
 
 	"github.com/kei2100/locker"
-	"github.com/kei2100/sync-until-succeed-once"
 )
 
 type Locker struct {
@@ -26,7 +26,7 @@ type lock struct {
 	logger locker.Logger
 	conn   *sql.Conn
 	key    string
-	once   sync.UntilSucceedOnce
+	once   sync.Once
 }
 
 func (r *Locker) Get(ctx context.Context, key string) (locker.Lock, error) {
@@ -36,7 +36,7 @@ func (r *Locker) Get(ctx context.Context, key string) (locker.Lock, error) {
 	}
 	onerror := func() {
 		if err := conn.Close(); err != nil {
-			r.Logger.Printf("mysql: an error occurred while closing the connection: %+v\n", err)
+			r.Logger.Printf("mysql: an error occurred while closing the connection: %+v", err)
 		}
 	}
 	var result sql.NullInt32
@@ -56,22 +56,21 @@ func (r *Locker) Get(ctx context.Context, key string) (locker.Lock, error) {
 	}, nil
 }
 
-func (k *lock) Release(ctx context.Context) error {
-	if err := k.once.Do(func() error {
+func (k *lock) Release(ctx context.Context) {
+	k.once.Do(func() {
+		defer func() {
+			if err := k.conn.Close(); err != nil {
+				k.logger.Printf("mysql: an error occurred while closing the connection: %+v", err)
+			}
+		}()
 		row := k.conn.QueryRowContext(ctx, "SELECT RELEASE_LOCK(?)", k.key)
 		var result sql.NullInt32
 		if err := row.Scan(&result); err != nil {
-			return fmt.Errorf("mysql: release lock: %w", err)
+			k.logger.Printf("mysql: failed to release lock: %+v", err)
+			return
 		}
-		if !result.Valid || result.Int32 == 0 {
-			k.logger.Println("mysql: lock already released")
+		if !(result.Valid && result.Int32 == 1) {
+			panic("mysql: lock already released")
 		}
-		if err := k.conn.Close(); err != nil {
-			k.logger.Printf("mysql: an error occurred while closing the connection: %+v\n", err)
-		}
-		return nil
-	}); err != nil {
-		return err
-	}
-	return nil
+	})
 }

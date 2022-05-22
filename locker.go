@@ -13,5 +13,5 @@ type Locker interface {
 // TODO
 type Lock interface {
 	// TODO
-	Release(ctx context.Context) error
+	Release(ctx context.Context)
 }
