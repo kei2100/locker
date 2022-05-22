@@ -1,7 +1,5 @@
 github.com/go-sql-driver/mysql v1.6.0 h1:BCTh4TKNUYmOmMUcQ3IipzF5prigylS7XXjEkfCHuOE=
 github.com/go-sql-driver/mysql v1.6.0/go.mod h1:DCzpHaOWr8IXmIStZouvnhqoel9Qv2LBy8hT2VhHyBg=
-github.com/kei2100/sync-until-succeed-once v0.0.1 h1:u/t8C7YQgVqYwuihvN5P+O4g6futQJkvl+bv7jQji70=
-github.com/kei2100/sync-until-succeed-once v0.0.1/go.mod h1:dccFNZgoGq4AwWG7scbe8kevRNxBS345vKcMWsX6QrE=
 github.com/lib/pq v1.10.5 h1:J+gdV2cUmX7ZqL2B0lFcW0m+egaHC2V3lpO8nWxyYiQ=
 github.com/lib/pq v1.10.5/go.mod h1:AlVN5x4E4T544tWzH6hKfbfQvm3HdbOxrmggDNAPY9o=
 github.com/twmb/murmur3 v1.1.6 h1:mqrRot1BRxm+Yct+vavLMou2/iJt0tNVTTC0QoIjaZg=
