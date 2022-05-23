@@ -9,6 +9,7 @@ import (
 	"github.com/kei2100/locker"
 )
 
+// TODO
 type Locker struct {
 	Logger locker.Logger
 	db     *sql.DB
@@ -22,6 +23,7 @@ func NewLocker(db *sql.DB) *Locker {
 	}
 }
 
+// TODO
 type lock struct {
 	logger locker.Logger
 	conn   *sql.Conn
@@ -29,6 +31,7 @@ type lock struct {
 	once   sync.Once
 }
 
+// TODO
 func (r *Locker) Get(ctx context.Context, key string) (locker.Lock, error) {
 	conn, err := r.db.Conn(ctx)
 	if err != nil {
@@ -52,18 +55,18 @@ func (r *Locker) Get(ctx context.Context, key string) (locker.Lock, error) {
 	return &lock{
 		conn:   conn,
 		key:    key,
-		logger: locker.DefaultLogger,
+		logger: r.Logger,
 	}, nil
 }
 
-func (k *lock) Release(ctx context.Context) {
+func (k *lock) Release() {
 	k.once.Do(func() {
 		defer func() {
 			if err := k.conn.Close(); err != nil {
 				k.logger.Printf("mysql: an error occurred while closing the connection: %+v", err)
 			}
 		}()
-		row := k.conn.QueryRowContext(ctx, "SELECT RELEASE_LOCK(?)", k.key)
+		row := k.conn.QueryRowContext(context.Background(), "SELECT RELEASE_LOCK(?)", k.key)
 		var result sql.NullInt32
 		if err := row.Scan(&result); err != nil {
 			k.logger.Printf("mysql: failed to release lock: %+v", err)

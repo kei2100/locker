@@ -14,5 +14,5 @@ type Locker interface {
 // Lock interface represents an acquired named lock object.
 type Lock interface {
 	// Release releases the acquired named lock object.
-	Release(ctx context.Context)
+	Release()
 }

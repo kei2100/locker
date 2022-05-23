@@ -13,6 +13,7 @@ import (
 	"github.com/twmb/murmur3"
 )
 
+// TODO
 type Locker struct {
 	Logger  locker.Logger
 	db      *sql.DB
@@ -30,6 +31,7 @@ func NewLocker(db *sql.DB) *Locker {
 	}
 }
 
+// TODO
 type lock struct {
 	logger locker.Logger
 	conn   *sql.Conn
@@ -38,6 +40,7 @@ type lock struct {
 	once   sync.Once
 }
 
+// TODO
 func (r *Locker) Get(ctx context.Context, key string) (locker.Lock, error) {
 	keyA, keyB, err := r.sum32Keys(key)
 	if err != nil {
@@ -46,6 +49,7 @@ func (r *Locker) Get(ctx context.Context, key string) (locker.Lock, error) {
 	return r.Get32(ctx, keyA, keyB)
 }
 
+// TODO
 func (r *Locker) Get32(ctx context.Context, keyA, keyB int32) (locker.Lock, error) {
 	conn, err := r.db.Conn(ctx)
 	if err != nil {
@@ -64,7 +68,7 @@ func (r *Locker) Get32(ctx context.Context, keyA, keyB int32) (locker.Lock, erro
 		conn:   conn,
 		keyA:   keyA,
 		keyB:   keyB,
-		logger: locker.DefaultLogger,
+		logger: r.Logger,
 	}, nil
 }
 
@@ -80,14 +84,14 @@ func (r *Locker) sum32Keys(key string) (keyA, keyB int32, err error) {
 	return int32(hA.Sum32()), int32(hB.Sum32()), nil
 }
 
-func (k *lock) Release(ctx context.Context) {
+func (k *lock) Release() {
 	k.once.Do(func() {
 		defer func() {
 			if err := k.conn.Close(); err != nil {
 				k.logger.Printf("postgres: an error occurred while closing the connection: %+v", err)
 			}
 		}()
-		row := k.conn.QueryRowContext(ctx, "SELECT pg_advisory_unlock($1, $2)", k.keyA, k.keyB)
+		row := k.conn.QueryRowContext(context.Background(), "SELECT pg_advisory_unlock($1, $2)", k.keyA, k.keyB)
 		var released bool
 		if err := row.Scan(&released); err != nil {
 			k.logger.Printf("postgres: failed to release lock: %+v", err)
