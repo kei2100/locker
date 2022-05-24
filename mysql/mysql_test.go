@@ -1,64 +1,19 @@
 package mysql
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql" // init driver
 	"os"
 	"testing"
-	"time"
+
+	_ "github.com/go-sql-driver/mysql" // init driver
+	"github.com/kei2100/locker/internal/test"
 )
 
 func TestLocker(t *testing.T) {
-	ctx := context.Background()
 	db := setupMySQL(t)
 	locker := NewLocker(db)
-	key := "key"
-	// get lock
-	lock, err := locker.Get(ctx, key)
-	if err != nil {
-		t.Fatal(err)
-	}
-	// expect duplicate key
-	timeout, notTimeout := make(chan struct{}), make(chan struct{})
-	go func() {
-		ctx, cancel := context.WithTimeout(ctx, 100*time.Millisecond)
-		t.Cleanup(cancel)
-		lock, err := locker.Get(ctx, key)
-		if err != nil {
-			close(timeout)
-			return
-		}
-		defer lock.Release(ctx)
-		close(notTimeout)
-	}()
-	select {
-	case <-notTimeout:
-		t.Fatal("not timeout")
-	case <-timeout:
-		// ok
-	}
-	// release
-	lock.Release(ctx)
-	timeout, notTimeout = make(chan struct{}), make(chan struct{})
-	go func() {
-		ctx, cancel := context.WithTimeout(ctx, 100*time.Millisecond)
-		t.Cleanup(cancel)
-		lock, err := locker.Get(ctx, key)
-		if err != nil {
-			close(timeout)
-			return
-		}
-		defer lock.Release(ctx)
-		close(notTimeout)
-	}()
-	select {
-	case <-notTimeout:
-		// ok
-	case <-timeout:
-		t.Fatal("timeout")
-	}
+	test.TestSpec(t, locker)
 }
 
 func setupMySQL(t testing.TB) *sql.DB {
