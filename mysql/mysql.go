@@ -9,7 +9,7 @@ import (
 	"github.com/kei2100/locker"
 )
 
-// TODO
+// Locker is an implementation of the locker.Locker using MySQL GET_LOCK
 type Locker struct {
 	Logger locker.Logger
 	db     *sql.DB
@@ -23,7 +23,6 @@ func NewLocker(db *sql.DB) *Locker {
 	}
 }
 
-// TODO
 type lock struct {
 	logger locker.Logger
 	conn   *sql.Conn
@@ -31,7 +30,8 @@ type lock struct {
 	once   sync.Once
 }
 
-// TODO
+// Get calls MySQL GET_LOCK to acquire the lock.
+// The key length must be less than or equal to 64 characters according to MySQL GET_LOCK constraints
 func (r *Locker) Get(ctx context.Context, key string) (locker.Lock, error) {
 	conn, err := r.db.Conn(ctx)
 	if err != nil {

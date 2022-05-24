@@ -13,7 +13,7 @@ import (
 	"github.com/twmb/murmur3"
 )
 
-// TODO
+// Locker is an implementation of the locker.Locker using PostgreSQL pg_advisory_lock
 type Locker struct {
 	Logger  locker.Logger
 	db      *sql.DB
@@ -31,7 +31,6 @@ func NewLocker(db *sql.DB) *Locker {
 	}
 }
 
-// TODO
 type lock struct {
 	logger locker.Logger
 	conn   *sql.Conn
@@ -40,17 +39,20 @@ type lock struct {
 	once   sync.Once
 }
 
-// TODO
+// Get calls PostgreSQL pg_advisory_lock(keyA int, keyB int) to acquire the lock.
+// Since these pg_advisory_lock keys are 32-bit integers, this method uses two different hash functions to convert the argument string keys to integers
+// and uses them as the keys for pg_advisory_lock.
+// Default hash functions are FNV-1a hash and Murmur hash.
 func (r *Locker) Get(ctx context.Context, key string) (locker.Lock, error) {
 	keyA, keyB, err := r.sum32Keys(key)
 	if err != nil {
 		return nil, err
 	}
-	return r.Get32(ctx, keyA, keyB)
+	return r.GetByRawKey(ctx, keyA, keyB)
 }
 
-// TODO
-func (r *Locker) Get32(ctx context.Context, keyA, keyB int32) (locker.Lock, error) {
+// GetByRawKey calls PostgreSQL pg_advisory_lock(keyA int, keyB int) to acquire the lock.
+func (r *Locker) GetByRawKey(ctx context.Context, keyA, keyB int32) (locker.Lock, error) {
 	conn, err := r.db.Conn(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("postgres: get connection: %w", err)
