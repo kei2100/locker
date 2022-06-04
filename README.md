@@ -16,7 +16,7 @@ func ExampleLocker() {
 	locker := postgres.NewLocker(db)
 	lock, err := locker.Get(context.Background(), key)
 	if err != nil {
-        panic(fmt.Sprintf("failed to acquire: %+v", err))
+		panic(fmt.Sprintf("failed to acquire: %+v", err))
 	}
 	// Releases the lock at the end of the function
 	defer lock.Release()
