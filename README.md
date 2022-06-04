@@ -50,10 +50,10 @@ func ExampleLocker() {
 Currently provides following implementations.
 
 * postgres.Locker
-  * Provides a simple lock mechanism using PostgreSQL pg_advisory_lock
+  * postgres.Locker provides a simple lock mechanism using PostgreSQL pg_advisory_lock
   * Recommend that using the [pgx](https://github.com/jackc/pgx) PostgreSQL Driver
 * mysql.Locker
-  * Provides a simple lock mechanism using MySQL GET_LOCK
+  * mysql.Locker provides a simple lock mechanism using MySQL GET_LOCK
 
 ## Installation
 
