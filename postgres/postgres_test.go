@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"os"
 	"testing"
 
 	_ "github.com/jackc/pgx/v4/stdlib" // init driver
@@ -11,6 +12,15 @@ func TestLocker(t *testing.T) {
 	db := test.SetupPostgres(t)
 	locker := NewLocker(db)
 	test.TestSpec(t, locker)
+}
+
+func TestMultiProcess(t *testing.T) {
+	db := test.SetupPostgres(t)
+	locker := NewLocker(db)
+	environ := []string{
+		"HOST_POSTGRES_PORT", os.Getenv("HOST_POSTGRES_PORT"),
+	}
+	test.TestMultiProcess(t, "postgres", environ, locker)
 }
 
 // go test -fuzz=FuzzLocker_sum32Keys -fuzztime 30s github.com/kei2100/locker/postgres

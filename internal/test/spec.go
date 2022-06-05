@@ -12,11 +12,11 @@ import (
 	"github.com/kei2100/locker"
 )
 
+const numThreads = 10
+const lockTimeout = 500 * time.Millisecond
+
 // TestSpec tests whether the specific Locker implementation meets the specification
 func TestSpec(t *testing.T, impl locker.Locker) {
-	const numThreads = 10
-	const lockTimeout = 500 * time.Millisecond
-
 	t.Run("lock not acquired", func(t *testing.T) {
 		t.Parallel()
 		key := randHex(16)
