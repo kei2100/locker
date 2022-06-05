@@ -57,9 +57,6 @@ Currently provides following implementations.
 
 ## Installation
 
-`go get` the implementation you need.
-
 ```bash
-$ go get github.com/kei2100/locker/postgres
-$ go get github.com/kei2100/locker/mysql
+$ go get github.com/kei2100/locker
 ```
