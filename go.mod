@@ -3,9 +3,9 @@ module github.com/kei2100/locker
 go 1.18
 
 require (
+	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/jackc/pgx/v4 v4.16.1
-	github.com/twmb/murmur3 v1.1.6
 )
 
 require (
