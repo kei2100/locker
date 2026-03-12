@@ -1,9 +1,8 @@
-version: '3.9'
 services:
   mysql:
     profiles:
       - middleware
-    image: mysql:8-debian
+    image: mysql:8.0
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
       MYSQL_USER: develop

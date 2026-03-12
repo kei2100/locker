@@ -23,8 +23,8 @@ func TestMultiProcess(t *testing.T) {
 	test.TestMultiProcess(t, "postgres", environ, locker)
 }
 
-// go test -fuzz=FuzzLocker_sum32Keys -fuzztime 30s github.com/kei2100/locker/postgres
-func FuzzLocker_sum32Keys(f *testing.F) {
+// go test -fuzz=FuzzLocker_sum64Key$ -fuzztime 30s github.com/kei2100/locker/postgres
+func FuzzLocker_sum64Key(f *testing.F) {
 	locker := NewLocker(nil)
 	corpus := [][2]string{
 		{"costarring", "liquid"},
@@ -39,47 +39,40 @@ func FuzzLocker_sum32Keys(f *testing.F) {
 		if keyA == keyB {
 			return
 		}
-		a1, a2, err := locker.sum32Keys(keyA)
+		a, err := locker.sum64Key(keyA)
 		if err != nil {
-			t.Errorf("sum32Keys(%x[%s]) returns an error %+v", keyA, keyA, err)
+			t.Errorf("sum64Key(%x[%s]) returns an error %+v", keyA, keyA, err)
 			return
 		}
-		b1, b2, err := locker.sum32Keys(keyB)
+		b, err := locker.sum64Key(keyB)
 		if err != nil {
-			t.Errorf("sum32Keys(%x[%s]) returns an error %+v", keyB, keyB, err)
+			t.Errorf("sum64Key(%x[%s]) returns an error %+v", keyB, keyB, err)
 			return
 		}
-		if a1 == b1 && a2 == b2 {
+		if a == b {
 			t.Errorf("collision:\n%x[%s]\n%x[%s]", keyA, keyA, keyB, keyB)
 			return
 		}
 	})
 }
 
-// go test -fuzz=FuzzLocker_sum32Keys_table -fuzztime 30s github.com/kei2100/locker/postgres
-func FuzzLocker_sum32Keys_table(f *testing.F) {
+// go test -fuzz=FuzzLocker_sum64Key_table$ -fuzztime 30s github.com/kei2100/locker/postgres
+func FuzzLocker_sum64Key_table(f *testing.F) {
 	locker := NewLocker(nil)
-	table := make(map[int32]map[int32]string, 0)
+	table := make(map[int64]string, 0)
 	f.Fuzz(func(t *testing.T, key string) {
-		key1, key2, err := locker.sum32Keys(key)
+		k, err := locker.sum64Key(key)
 		if err != nil {
-			t.Errorf("sum32Keys(%x[%s]) returns an error %+v", key, key, err)
+			t.Errorf("sum64Key(%x[%s]) returns an error %+v", key, key, err)
 			return
 		}
-		e1, ok := table[key1]
+		existing, ok := table[k]
 		if !ok {
-			table[key1] = map[int32]string{
-				key2: key,
-			}
+			table[k] = key
 			return
 		}
-		e2, ok := e1[key2]
-		if !ok {
-			e1[key2] = key
-			return
-		}
-		if e2 != key {
-			t.Errorf("collision:\n%x[%s]\n%x[%s]", e2, e2, key, key)
+		if existing != key {
+			t.Errorf("collision:\n%x[%s]\n%x[%s]", existing, existing, key, key)
 		}
 	})
 }
